@@ -61,6 +61,9 @@ WELCOME:
     MOVE.B    SCORE,D6
     MOVE.L    D6,(A6)
     
+    MOVE.B  #30,RABBITHEALTH
+    LEA     RABBITHEALTH,A4
+    
     RTS                     RETURN FROM WELCOME: SUBROUTINE
 
 *-------------------------------------------------------
@@ -164,38 +167,73 @@ GAMEPLAY:
     MOVE.B  #4,D0
     TRAP    #15
     
-    CMP     #1,D1               IF NUMBER ENTERED IS NOT ONE "1" THEN GO BACK TO THE START OF THE LOOP
-    BNE     ENTER_VALID_INPUT
+    CMP     #1,D1               CHECK IF INPUT IS LESS THAN 1
+    BLT     ENTER_VALID_INPUT   IF NUMBER IS LESS THAN 1 THEN BRANCH
     
+    CMP     #3,D1               CHECK IF INPUT IS GREATER THAN 3
+    BGT     ENTER_VALID_INPUT   IF NUMBER IS GREATER THAN 3 THEN BRANCH
+    
+    CMP     #1,D1
+    BEQ     PLAYER_ATTACK
+    
+    CMP     #2,D1
+    BEQ     PLAYER_SHIELD
+    
+    RTS
+
+
+PLAYER_ATTACK:
     BSR     DECORATE
+    
+    BSR     COLLISION
     
     BSR     ENDL
     
-    BSR     COLLISION
+    BSR     RABBIT_HEALTH
     
     BSR     DECORATE
     
     BSR     RABBIT_ATTACKS
     
-    BSR     ENDL
+    BSR     GAMEPLAY
+    
+    RTS
+    
+PLAYER_SHIELD:
+    BSR     DECORATE
+    
+    BSR     TEXT_COLOUR_GREEN
+    
+    LEA     SHIELD_MSG,A1
+    MOVE.B  #14,D0
+    TRAP    #15
+    
+    BSR     TEXT_COLOUR_WHITE
+    
+    BSR     DECORATE
+    
+    BSR     RABBIT_FAILS_ATTACK
     
     BSR     GAMEPLAY
     
     RTS
-
 *-------------------------------------------------------
-*-----------------HEADS UP DISPLAY (SCORE)--------------
-* RETRIEVES THE SCORE FROM MEMORY LOCATION -------------
+*-----------------HEADS UP DISPLAY (SCORE AND HEALTH)---
+* RETRIEVES THE SCORE AND HEALTH FROM MEMORY LOCATION --
 *-------------------------------------------------------   
 HUD:
-    BSR     DECORATE
+    LEA     HUD_MSG_SCORE,A1
+    MOVE.B  #14,D0
+    TRAP    #15
     
     CLR     D1
-    MOVE.B  (A6),D1    RETRIEVE THE VALUE A3 POINT TO AND MOVE TO D1
+    MOVE.L  (A6),D1     RETRIEVE THE VALUE A3 POINT TO AND MOVE TO D1
     MOVE.B  #3,D0       MOVE LITERAL 3 TO D0
     TRAP    #15         INTREPRET VALUE IN D0, WHICH IS 3 SO DISPLAYS D1
     
-    LEA     HUD_MSG,A1
+    BSR     ENDL
+    
+    LEA     HUD_MSG_HEALTH,A1
     MOVE.B  #14,D0
     TRAP    #15
     
@@ -241,10 +279,11 @@ COLLISION_HIT:
     MOVE    #14,D0            TRAP TASK 14
     TRAP    #15
     
-    BSR     TEXT_COLOUR_WHITE
+    MOVE.B  (A4),D7
+    SUB.B   #$A,D7
+    MOVE.B  D7,(A4)
     
-    SUB     #$A,D4            SUBTRACT 10 (A IN HEX) FROM 100 (64 IN HEX) IN  DATA REGISTER 1
-    MOVE.B  D4,$4003          PLACE NEW HEALTH IN MEMORY ADRESS 4003
+    BSR     TEXT_COLOUR_WHITE
     
     RTS
     
@@ -256,7 +295,7 @@ COLLISION_MISS:
     RTS
 
 *-------------------------------------------------------
-*--------------------------RABBIT ATTACKS---------------
+*--------------------------RABBIT-----------------------
 *-------------------------------------------------------
 RABBIT_ATTACKS:
     BSR     TEXT_COLOUR_RED
@@ -267,7 +306,34 @@ RABBIT_ATTACKS:
     
     BSR     TEXT_COLOUR_WHITE
     
+    SUB     #$A,D4            SUBTRACT 10 (A IN HEX) FROM 100 (64 IN HEX) IN  DATA REGISTER 1
+    MOVE.B  D4,$4003          PLACE NEW HEALTH IN MEMORY ADRESS 4003
+    
+    BSR     ENDL
+    
     RTS
+
+RABBIT_FAILS_ATTACK:
+    BSR     TEXT_COLOUR_GREY
+    
+    LEA     RABBITFAILATTACK_MSG,A1         LOAD MESSAGE
+    MOVE.B  #14,D0                          TRAP TASK 14
+    TRAP    #15                             EXECUTE
+    
+    BSR     TEXT_COLOUR_WHITE
+    
+    BSR     ENDL
+    
+    RTS
+
+RABBIT_HEALTH:
+    LEA     RABBIT_HEALTH_MSG,A1            LOAD MESSAGE
+    MOVE.B  #14,D0                          TRAP TASK 14
+    TRAP    #15                             EXECUTE
+    
+    MOVE.L  D7,D1     RETRIEVE THE VALUE A3 POINT TO AND MOVE TO D1
+    MOVE.B  #3,D0       MOVE LITERAL 3 TO D0
+    TRAP    #15         INTREPRET VALUE IN D0, WHICH IS 3 SO DISPLAYS D1
 *-------------------------------------------------------
 *--------------------------LOOP-------------------------
 *-------------------------------------------------------
@@ -318,6 +384,11 @@ TEXT_COLOUR_WHITE:
     MOVE    #21,D0                          TRAP TASK 21
     TRAP    #15                             EXECUTE
     RTS
+TEXT_COLOUR_GREY:
+    MOVE.l  #$666666,D1                     SET COLOUR BACK TO WHITE
+    MOVE    #21,D0                          TRAP TASK 21
+    TRAP    #15                             EXECUTE
+    RTS
 *-------------------------------------------------------
 *------------------------REPLAY-------------------------
 *-------------------------------------------------------
@@ -362,36 +433,40 @@ WEAPONS_MSG:    DC.B    'ENTER 1 FOR SPEER || ENTER 2 FOR SWORD'
                 DC.B    'CHOOSE WEAPON: ',0
                 
          *RABBIT MESSAGES
-RABBITSUCCESFULATTACK_MSG      DC.B    'RABBIT BITES YOU AND YOU LOOSE 10 HEALTH',0
-RABBITFAILATTACK_MSG           DC.B    'RABBIT BITES YOU BUY YOU SHIELDED , NO HEALTH LOST',0
-GAMEPLAY_MSG:   DC.B    'YOU HAVE ENCOUNTERED "ANGRY RABBIT"'
-                DC.B    $0D,$0A
-                DC.B    'ENTER "1" TO ATTACK || ENTER "2" TO SHIELD || ENTER "3" TO USE POTION:  ',0
+RABBITSUCCESFULATTACK_MSG:      DC.B    'RABBIT BITES YOU AND YOU LOOSE 10 HEALTH',0
+RABBITFAILATTACK_MSG:           DC.B    'RABBIT BITES YOU BUY YOU SHIELDED , NO HEALTH LOST',0
+GAMEPLAY_MSG:            DC.B    'YOU HAVE ENCOUNTERED "ANGRY RABBIT"'
+                         DC.B    $0D,$0A
+                         DC.B    'ENTER "1" TO ATTACK || ENTER "2" TO SHIELD || ENTER "3" TO USE POTION:  ',0
                 
          *GAME PLAY MESSAGES
-UPDATE_MSG:     DC.B    'UPDATE GAMEPLAY !',0
-DRAW_MSG:       DC.B    'DRAW SCREEN !',0
-HIT_MSG:        DC.B    'STRIKE!',0
-MISS_MSG:       DC.B    'MISS!',0
-LOOP_MSG:       DC.B    '.',0
-REPLAY_MSG:     DC.B    'ENTER 0 TO QUIT ANY OTHER NUMBER TO REPLAY : ',0
-HUD_MSG:        DC.B    'SCORE : '
-                DC.B    $0D,$0A
-                DC.B    'HEALTH : ',0
-SHOP_MSG        DC.B    'WOULD YOU LIKE TO BUY POTIONS?'
-                DC.B    $0D,$0A
-                DC.B    'ENTER "1" IF YES , ANY OTHER NUMBER FOR NO',0
-INVALID_INPUT   DC.B    'ENTER A VALID NUMBER',0
+UPDATE_MSG:              DC.B    'UPDATE GAMEPLAY !',0
+DRAW_MSG:                DC.B    'DRAW SCREEN !',0
+HIT_MSG:                 DC.B    'STRIKE!',0
+MISS_MSG:                DC.B    'MISS!',0
+SHIELD_MSG:              DC.B    'SHIELD!',0
+HEAL_MSG:                DC.B    'HEAL!',0
+LOOP_MSG:                DC.B    '.',0
+REPLAY_MSG:              DC.B    'ENTER 0 TO QUIT ANY OTHER NUMBER TO REPLAY : ',0
+HUD_MSG_HEALTH:          DC.B    'PLAYER HEALTH: ',0
+HUD_MSG_SCORE:           DC.B    'SCORE: ',0
+RABBIT_HEALTH_MSG:       DC.B    'RABBIT HEALTH: ',0
+SHOP_MSG:                DC.B    'WOULD YOU LIKE TO BUY POTIONS?'
+                         DC.B    $0D,$0A
+                         DC.B    'ENTER "1" IF YES , ANY OTHER NUMBER FOR NO',0
+INVALID_INPUT:           DC.B    'ENTER A VALID NUMBER',0
          *PLAYER AND ENEMY VARIABLES
-HEALTH:         DS.W    1   PLAYERS HEALTH
+HEALTH:                  DS.W    1   PLAYERS HEALTH
 
-RABBITHEALTH:   DS.W    1   RABBITS HEALTH
+RABBITHEALTH:            DS.W    1   RABBITS HEALTH
 
-SCORE:          DS.W    1   RESERVE SPACE FOR SCORE
+SCORE:                   DS.W    1   RESERVE SPACE FOR SCORE
 
-COINS:          DS.W    1   RESERVE SPACE FOR COINS
+XP:                      DS.W    1   RESERVE SPACE FOR COINS
 
     END START
+
+
 
 
 
