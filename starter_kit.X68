@@ -22,7 +22,7 @@ MINE_LOC    EQU 100    USED BELOW FOR SOME SIMPLE COLLISION DETECTION USING CMP
 *START OF GAME
 START:
     MOVE.B  #100,$4003 PUT HEALTH IN MEMORY LOCATION $4000
-    LEA     $4000,A3   ASSIGN ADDRESS A3 TO THAT MEMORY LOCATION
+    LEA     $4003,A3   ASSIGN ADDRESS A3 TO THAT MEMORY LOCATION
     
     MOVE.B  #0,$4010   PUT SCORE IN MEMORY LOCATION $4010
     LEA     $4010,A6   ASSIGN ADRESS A6 TO THAT MEMORY LOCATION
@@ -53,21 +53,18 @@ WELCOME:
     BSR     ENDL            BRANCH TO ENDL SUBROUTINE
     BSR     INPUT
     
-    MOVE.B    #100,HEALTH     INITIALIZE HEALTH TO 100
-    MOVE.B    HEALTH,D4       PLACE HEALTH IN DATA REGISTER 4
-    MOVE.L    D4,(A3)         STORE DATA IN THE MEMORY LOCATION STORED IN ADRESS REGISTER 3
+*    MOVE.B    #100,HEALTH     INITIALIZE HEALTH TO 100
+*    MOVE.B    HEALTH,D4       PLACE HEALTH IN DATA REGISTER 4
+*    MOVE.L    D4,(A3)         STORE DATA IN THE MEMORY LOCATION STORED IN ADRESS REGISTER 3
+    
+    MOVE.B  #100,HEALTH
+    LEA     HEALTH,A3
     
     MOVE.B    #0,SCORE
     MOVE.B    SCORE,D6
     MOVE.L    D6,(A6)
     
-*    MOVE.B  #100,HEALTH
-*    LEA     HEALTH,A3
-*    
-*    MOVE.B  #0,SCORE
-*    LEA     SCORE,A6
-    
-    MOVE.B  #30,RABBITHEALTH
+    MOVE.B  #150,RABBITHEALTH
     LEA     RABBITHEALTH,A4
     
     RTS                     RETURN FROM WELCOME: SUBROUTINE
@@ -77,7 +74,7 @@ WELCOME:
 *-------------------------------------------------------    
 INPUT:
     BSR     POTIONS         BRANCH TO POTION INPUT SUBROUTINE
-    BSR     WEAPONS         BRANCH TO WEAPONS INPUT SUBROUTINE
+*    BSR     WEAPONS         BRANCH TO WEAPONS INPUT SUBROUTINE
     RTS
 
 *-------------------------------------------------------
@@ -136,20 +133,51 @@ POTIONS:
     
     BSR     DECORATE
     RTS
+
+NO_POTIONS_LEFT:
+    BSR     ENDL
+    
+    BSR     TEXT_COLOUR_RED
+
+    LEA     NO_POTIONS_LEFT_MSG,A1
+    MOVE.B  #14,D0
+    TRAP    #15
+    
+    BSR     TEXT_COLOUR_WHITE
+    
+    MOVE.B  #4,D0
+    TRAP    #15
+    
+    BSR     GAMELOOP
+AT_MAX_HEALTH:
+    BSR     ENDL
+    
+    BSR     TEXT_COLOUR_RED
+
+    LEA     MAX_HEALTH_MSG,A1
+    MOVE.B  #14,D0
+    TRAP    #15
+    
+    BSR     TEXT_COLOUR_WHITE
+    
+    MOVE.B  #4,D0
+    TRAP    #15
+    
+    BSR     GAMELOOP
 *-------------------------------------------------------
 *-------------------------WEAPONS-----------------------
 * NUMBER OF WEAPONS
 *-------------------------------------------------------   
-WEAPONS:
-    BSR     ENDL
-    BSR     DECORATE
-    LEA     WEAPONS_MSG,A1
-    MOVE.B  #14,D0
-    TRAP    #15
-    MOVE.B  #4,D0
-    TRAP    #15
-    BSR     DECORATE
-    RTS
+*WEAPONS:
+*    BSR     ENDL
+*    BSR     DECORATE
+*    LEA     WEAPONS_MSG,A1
+*    MOVE.B  #14,D0
+*    TRAP    #15
+*    MOVE.B  #4,D0
+*    TRAP    #15
+*    BSR     DECORATE
+*    RTS
 
 *-------------------------------------------------------
 *---GAME PLAY (QUEST PROGRESS)--------------------------
@@ -159,7 +187,9 @@ GAMEPLAY:
     TRAP    #15
     
     BSR     CLEAR_SCREEN
-
+    
+    BSR     CHECK_IF_DEFEATED
+    
     BSR     HUD    BRANCH INTO DISPLAY HUD
     
     BSR     RABBIT_HEALTH
@@ -228,6 +258,14 @@ PLAYER_SHIELD:
     BSR     GAMEPLAY
 
 PLAYER_USE_POTION:
+    MOVE.B  $4500,D1
+    CMP     #0,D1
+    BEQ     NO_POTIONS_LEFT
+    
+    MOVE.B  $4003,D1
+    CMP     #100,D1
+    BGT     AT_MAX_HEALTH
+    
     BSR     DECORATE
     
     BSR     TEXT_COLOUR_GREEN
@@ -240,7 +278,7 @@ PLAYER_USE_POTION:
     
     SUB.B   #1,$4500            SUBTRACT 1 POTION FROM INVENTORY
     
-    ADD     #$1E,D4              SUBTRACT 10 (A IN HEX) FROM 100 (64 IN HEX) IN  DATA REGISTER 1
+    ADD     #$1E,D4             SUBTRACT 10 (A IN HEX) FROM 100 (64 IN HEX) IN  DATA REGISTER 1
     MOVE.B  D4,$4003            PLACE NEW HEALTH IN MEMORY ADRESS 4003
     
     BSR     ENDL
@@ -370,7 +408,7 @@ RABBIT_HEALTH:
     MOVE.B  #14,D0                          TRAP TASK 14
     TRAP    #15                             EXECUTE
     
-    MOVE.L  D7,D1     RETRIEVE THE VALUE A3 POINT TO AND MOVE TO D1
+    MOVE.B  D7,D1       RETRIEVE THE VALUE A3 POINT TO AND MOVE TO D1
     MOVE.B  #3,D0       MOVE LITERAL 3 TO D0
     TRAP    #15         INTREPRET VALUE IN D0, WHICH IS 3 SO DISPLAYS D1
 *-------------------------------------------------------
@@ -442,7 +480,7 @@ REPLAY:
 
     CMP     #EXIT,D1
     BEQ     END         IF SR Z REGISTER CONTAINS 1 BEQ => BRANCH EQUALS
-    BSR     GAMELOOP
+    BSR     WELCOME
 
 ENDL:
     MOVEM.L D0/A1,-(A7)
@@ -451,7 +489,33 @@ ENDL:
     TRAP    #15
     MOVEM.L (A7)+,D0/A1
     RTS
+*-------------------------------------------------------
+*------------------------PROCESS HEALTH-----------------
+*CHECK IF ANY OF THE ENTITIES ARE DEFEATED--------------
+CHECK_IF_DEFEATED:
+        MOVE.B  (A4),D5
+        CMP     #0,D5
+        BEQ     RABBIT_DEFEATED
     
+        MOVE.B  $4003,D5
+        CMP     #0,D5
+        BEQ     PLAYER_DEFEATED
+        
+        RTS
+RABBIT_DEFEATED:
+        *BSR     CLEAR_SCREEN
+        LEA     RABBIT_DEFEATED_MSG,A1
+        MOVE.B  #14,D0
+        TRAP    #15
+        
+        BSR     REPLAY
+PLAYER_DEFEATED:
+        *BSR     CLEAR_SCREEN
+        LEA     PLAYER_DEFEATED_MSG,A1
+        MOVE.B  #14,D0
+        TRAP    #15
+        
+        BSR     REPLAY
 *-------------------------------------------------------
 *-------------------DATA DELARATIONS--------------------
 *-------------------------------------------------------
@@ -496,6 +560,11 @@ SHOP_MSG:                DC.B    'WOULD YOU LIKE TO BUY POTIONS?'
                          DC.B    'ENTER "1" IF YES , ANY OTHER NUMBER FOR NO',0
 INVALID_INPUT:           DC.B    'ENTER A VALID NUMBER',0
 POTIONS_AMOUNT_MSG       DC.B    'POTIONS LEFT: ',0
+NO_POTIONS_LEFT_MSG      DC.B    'NO POTIONS LEFT',0
+
+MAX_HEALTH_MSG           DC.B    'ALREADY AT MAX HEALTH',0
+PLAYER_DEFEATED_MSG      DC.B    'YOU HAVE BEEN DEFEATED',0
+RABBIT_DEFEATED_MSG      DC.B    'THE CRAZY RABBIT HAS BEEN DEFEATED!',0
          *PLAYER AND ENEMY VARIABLES
 HEALTH:                  DS.W    1   PLAYERS HEALTH
 
