@@ -61,6 +61,12 @@ WELCOME:
     MOVE.B    SCORE,D6
     MOVE.L    D6,(A6)
     
+*    MOVE.B  #100,HEALTH
+*    LEA     HEALTH,A3
+*    
+*    MOVE.B  #0,SCORE
+*    LEA     SCORE,A6
+    
     MOVE.B  #30,RABBITHEALTH
     LEA     RABBITHEALTH,A4
     
@@ -119,20 +125,15 @@ POTIONS:
     TRAP    #15
     MOVE.B  #4,D0
     TRAP    #15
-    BSR     DECORATE
-    RTS
-*-------------------------------------------------------
-*--------------------SHOP-------------------------------
-* BUY POTIONS
-*------------------------------------------------------- 
-SHOP:
-    BSR     ENDL
-    BSR     DECORATE
-    LEA     POTIONS_MSG,A1
-    MOVE.B  #14,D0
-    TRAP    #15
-    MOVE.B  #4,D0
-    TRAP    #15
+    
+    CMP     #1,D1
+    BLT     POTIONS
+    
+    CMP     #9,D1
+    BGT     POTIONS
+    
+    MOVE.B  D1,$4500
+    
     BSR     DECORATE
     RTS
 *-------------------------------------------------------
@@ -154,7 +155,14 @@ WEAPONS:
 *---GAME PLAY (QUEST PROGRESS)--------------------------
 *------------------------------------------------------- 
 GAMEPLAY:
+    MOVE.B  #4,D0
+    TRAP    #15
+    
+    BSR     CLEAR_SCREEN
+
     BSR     HUD    BRANCH INTO DISPLAY HUD
+    
+    BSR     RABBIT_HEALTH
     
     BSR     ENDL
     
@@ -179,6 +187,9 @@ GAMEPLAY:
     CMP     #2,D1
     BEQ     PLAYER_SHIELD
     
+    CMP     #3,D1
+    BEQ     PLAYER_USE_POTION
+    
     RTS
 
 
@@ -189,11 +200,9 @@ PLAYER_ATTACK:
     
     BSR     ENDL
     
-    BSR     RABBIT_HEALTH
+    BSR     RABBIT_ATTACKS
     
     BSR     DECORATE
-    
-    BSR     RABBIT_ATTACKS
     
     BSR     GAMEPLAY
     
@@ -210,13 +219,37 @@ PLAYER_SHIELD:
     
     BSR     TEXT_COLOUR_WHITE
     
-    BSR     DECORATE
+    BSR     ENDL
     
     BSR     RABBIT_FAILS_ATTACK
     
-    BSR     GAMEPLAY
+    BSR     DECORATE
     
-    RTS
+    BSR     GAMEPLAY
+
+PLAYER_USE_POTION:
+    BSR     DECORATE
+    
+    BSR     TEXT_COLOUR_GREEN
+
+    LEA     USE_POTION_MSG,A1
+    MOVE.B  #14,D0
+    TRAP    #15
+    
+    BSR     TEXT_COLOUR_WHITE
+    
+    SUB.B   #1,$4500            SUBTRACT 1 POTION FROM INVENTORY
+    
+    ADD     #$1E,D4              SUBTRACT 10 (A IN HEX) FROM 100 (64 IN HEX) IN  DATA REGISTER 1
+    MOVE.B  D4,$4003            PLACE NEW HEALTH IN MEMORY ADRESS 4003
+    
+    BSR     ENDL
+    
+    BSR     RABBIT_ATTACKS
+    
+    BSR     DECORATE
+    
+    BSR     GAMEPLAY
 *-------------------------------------------------------
 *-----------------HEADS UP DISPLAY (SCORE AND HEALTH)---
 * RETRIEVES THE SCORE AND HEALTH FROM MEMORY LOCATION --
@@ -227,7 +260,7 @@ HUD:
     TRAP    #15
     
     CLR     D1
-    MOVE.L  (A6),D1     RETRIEVE THE VALUE A3 POINT TO AND MOVE TO D1
+    MOVE.L  (A6),D1     RETRIEVE THE VALUE A6 POINT TO AND MOVE TO D1
     MOVE.B  #3,D0       MOVE LITERAL 3 TO D0
     TRAP    #15         INTREPRET VALUE IN D0, WHICH IS 3 SO DISPLAYS D1
     
@@ -240,6 +273,16 @@ HUD:
     MOVE.L  (A3),D1     RETRIEVE THE VALUE A3 POINT TO AND MOVE TO D1
     MOVE.B  #3,D0       MOVE LITERAL 3 TO D0
     TRAP    #15         INTREPRET VALUE IN D0, WHICH IS 3 SO DISPLAYS D1
+    
+    BSR     ENDL
+    
+    LEA     POTIONS_AMOUNT_MSG,A1
+    MOVE.B  #14,D0
+    TRAP    #15
+    
+    MOVE.B  $4500,D1
+    MOVE.B  #3,D0
+    TRAP    #15
     
     BSR     DECORATE
     RTS
@@ -309,8 +352,6 @@ RABBIT_ATTACKS:
     SUB     #$A,D4            SUBTRACT 10 (A IN HEX) FROM 100 (64 IN HEX) IN  DATA REGISTER 1
     MOVE.B  D4,$4003          PLACE NEW HEALTH IN MEMORY ADRESS 4003
     
-    BSR     ENDL
-    
     RTS
 
 RABBIT_FAILS_ATTACK:
@@ -321,8 +362,6 @@ RABBIT_FAILS_ATTACK:
     TRAP    #15                             EXECUTE
     
     BSR     TEXT_COLOUR_WHITE
-    
-    BSR     ENDL
     
     RTS
 
@@ -445,6 +484,7 @@ DRAW_MSG:                DC.B    'DRAW SCREEN !',0
 HIT_MSG:                 DC.B    'STRIKE!',0
 MISS_MSG:                DC.B    'MISS!',0
 SHIELD_MSG:              DC.B    'SHIELD!',0
+USE_POTION_MSG           DC.B    'USED POTION, GAINED BACK 30 HEALTH!',0
 HEAL_MSG:                DC.B    'HEAL!',0
 LOOP_MSG:                DC.B    '.',0
 REPLAY_MSG:              DC.B    'ENTER 0 TO QUIT ANY OTHER NUMBER TO REPLAY : ',0
@@ -455,6 +495,7 @@ SHOP_MSG:                DC.B    'WOULD YOU LIKE TO BUY POTIONS?'
                          DC.B    $0D,$0A
                          DC.B    'ENTER "1" IF YES , ANY OTHER NUMBER FOR NO',0
 INVALID_INPUT:           DC.B    'ENTER A VALID NUMBER',0
+POTIONS_AMOUNT_MSG       DC.B    'POTIONS LEFT: ',0
          *PLAYER AND ENEMY VARIABLES
 HEALTH:                  DS.W    1   PLAYERS HEALTH
 
