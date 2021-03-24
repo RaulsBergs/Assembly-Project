@@ -22,7 +22,7 @@ MINE_LOC    EQU 100    USED BELOW FOR SOME SIMPLE COLLISION DETECTION USING CMP
 *START OF GAME
 START:
     MOVE.B  #100,$4003 PUT HEALTH IN MEMORY LOCATION $4000
-    LEA     $4003,A3   ASSIGN ADDRESS A3 TO THAT MEMORY LOCATION
+    LEA     $4000,A3   ASSIGN ADDRESS A3 TO THAT MEMORY LOCATION
     
     MOVE.B  #0,$4010   PUT SCORE IN MEMORY LOCATION $4010
     LEA     $4010,A6   ASSIGN ADRESS A6 TO THAT MEMORY LOCATION
@@ -53,19 +53,16 @@ WELCOME:
     BSR     ENDL            BRANCH TO ENDL SUBROUTINE
     BSR     INPUT
     
-*    MOVE.B    #100,HEALTH     INITIALIZE HEALTH TO 100
-*    MOVE.B    HEALTH,D4       PLACE HEALTH IN DATA REGISTER 4
-*    MOVE.L    D4,(A3)         STORE DATA IN THE MEMORY LOCATION STORED IN ADRESS REGISTER 3
+    MOVE.B    #100,HEALTH     INITIALIZE HEALTH TO 100
+    MOVE.B    HEALTH,D4       PLACE HEALTH IN DATA REGISTER 4
+    MOVE.L    D4,(A3)         STORE DATA IN THE MEMORY LOCATION STORED IN ADRESS REGISTER 3
     
-    MOVE.B  #100,HEALTH
-    LEA     HEALTH,A3
+    MOVE.B    #0,SCORE        INITIALISE SCORE TO 0
+    MOVE.B    SCORE,D6        PLACE SCORE IN DATA REGISTER 6
+    MOVE.L    D6,(A6)         STORE DATA FROM D6 IN MEMORY LOCATION SPECIFIED IN A6
     
-    MOVE.B    #0,SCORE
-    MOVE.B    SCORE,D6
-    MOVE.L    D6,(A6)
-    
-    MOVE.B  #150,RABBITHEALTH
-    LEA     RABBITHEALTH,A4
+    MOVE.B  #150,RABBITHEALTH INITIALISE RABBIT HEALTH TO 150
+    LEA     RABBITHEALTH,A4   LOAD EFFECTIVE ADRESS IN A4
     
     RTS                     RETURN FROM WELCOME: SUBROUTINE
 
@@ -117,19 +114,19 @@ DRAW:
 POTIONS:
     BSR     ENDL
     BSR     DECORATE
-    LEA     POTIONS_MSG,A1
-    MOVE.B  #14,D0
-    TRAP    #15
-    MOVE.B  #4,D0
-    TRAP    #15
+    LEA     POTIONS_MSG,A1      LOAD EFFECTIVE ADDRESS IN A1
+    MOVE.B  #14,D0              DISPLAY STRING TRAP FUNC
+    TRAP    #15                 
+    MOVE.B  #4,D0               ASK FOR NUMBER INPUT TRAP FUNC
+    TRAP    #15                 
     
-    CMP     #1,D1
-    BLT     POTIONS
+    CMP     #1,D1               COMPARE 1 TO USER INPUT
+    BLT     POTIONS             IF LESS THAN , GO BACK TO THE START OF THE BRANCH
     
-    CMP     #9,D1
-    BGT     POTIONS
+    CMP     #9,D1               COMPARE 9 TO USER INPUT
+    BGT     POTIONS             IF GREATER THAN , GO BACK TO THE START OF THE BRANCH
     
-    MOVE.B  D1,$4500
+    MOVE.B  D1,$4500            MOVE AMOUNT OF POTIONS TO MEMORY LOCATION 4500
     
     BSR     DECORATE
     RTS
@@ -137,88 +134,73 @@ POTIONS:
 NO_POTIONS_LEFT:
     BSR     ENDL
     
-    BSR     TEXT_COLOUR_RED
+    BSR     TEXT_COLOUR_RED         CHANGE TEXT COLOUR TO RED
 
-    LEA     NO_POTIONS_LEFT_MSG,A1
-    MOVE.B  #14,D0
+    LEA     NO_POTIONS_LEFT_MSG,A1  STORE ADDRESS OF STRING IN A1
+    MOVE.B  #14,D0                  DISPLAY STRING TRAP FUNC
     TRAP    #15
     
-    BSR     TEXT_COLOUR_WHITE
+    BSR     TEXT_COLOUR_WHITE       CHANGE COLOUR BACK TO WHITE
     
-    MOVE.B  #4,D0
+    MOVE.B  #4,D0                   ASKS FOR USER INPUT TO HALT THE SCREEN
     TRAP    #15
     
     BSR     GAMELOOP
 AT_MAX_HEALTH:
     BSR     ENDL
     
-    BSR     TEXT_COLOUR_RED
+    BSR     TEXT_COLOUR_RED         CHANGE TEXT COLOUR TO RED
 
-    LEA     MAX_HEALTH_MSG,A1
-    MOVE.B  #14,D0
+    LEA     MAX_HEALTH_MSG,A1       STORE ADRESS OF STRING IN ADDRESS REGISTER 1
+    MOVE.B  #14,D0                  DISPLAY STRING TRAP FUNC
     TRAP    #15
     
-    BSR     TEXT_COLOUR_WHITE
+    BSR     TEXT_COLOUR_WHITE       CHANGE TEXT COLOUR BACK TO WHITE
     
-    MOVE.B  #4,D0
+    MOVE.B  #4,D0                   ASKS FOR USER INPUT TO HALT THE SCREEN
     TRAP    #15
     
     BSR     GAMELOOP
 *-------------------------------------------------------
-*-------------------------WEAPONS-----------------------
-* NUMBER OF WEAPONS
-*-------------------------------------------------------   
-*WEAPONS:
-*    BSR     ENDL
-*    BSR     DECORATE
-*    LEA     WEAPONS_MSG,A1
-*    MOVE.B  #14,D0
-*    TRAP    #15
-*    MOVE.B  #4,D0
-*    TRAP    #15
-*    BSR     DECORATE
-*    RTS
-
-*-------------------------------------------------------
 *---GAME PLAY (QUEST PROGRESS)--------------------------
 *------------------------------------------------------- 
 GAMEPLAY:
-    MOVE.B  #4,D0
+    MOVE.B  #4,D0                   ASKS FOR USER INPUT TO HALT THE SCREEN
     TRAP    #15
     
     BSR     CLEAR_SCREEN
     
-    BSR     CHECK_IF_DEFEATED
+    BSR     CHECK_IF_DEFEATED       CHECKS IF PLAYER AND RABBIT ARE ALIVE TO CONTINUE GAME
     
-    BSR     HUD    BRANCH INTO DISPLAY HUD
+    BSR     HUD                     DISPLAY SCORE , HEALTH AND AMOUNT OF POTIONS
     
-    BSR     RABBIT_HEALTH
+    BSR     RABBIT_HEALTH           DISPLAY RABBITS HEALTH
     
     BSR     ENDL
     
-    LEA     GAMEPLAY_MSG,A1
-    MOVE.B  #14,D0
+    LEA     GAMEPLAY_MSG,A1         ASK FOR USER INPUT MESSAGE
+    MOVE.B  #14,D0                  DISPLAY STRING TRAP FUNC
     TRAP    #15
     
     BSR     ENDL
     
-    MOVE.B  #4,D0
+    MOVE.B  #4,D0                   GET USER INPUT TO KNOW WHICH ABILITY TO USE
     TRAP    #15
     
-    CMP     #1,D1               CHECK IF INPUT IS LESS THAN 1
-    BLT     ENTER_VALID_INPUT   IF NUMBER IS LESS THAN 1 THEN BRANCH
+    CMP     #1,D1                   CHECK IF INPUT IS LESS THAN 1
+    BLT     ENTER_VALID_INPUT       IF NUMBER IS LESS THAN 1 THEN BRANCH
     
-    CMP     #3,D1               CHECK IF INPUT IS GREATER THAN 3
-    BGT     ENTER_VALID_INPUT   IF NUMBER IS GREATER THAN 3 THEN BRANCH
+    CMP     #3,D1                   CHECK IF INPUT IS GREATER THAN 3
+    BGT     ENTER_VALID_INPUT       IF NUMBER IS GREATER THAN 3 THEN BRANCH
     
-    CMP     #1,D1
-    BEQ     PLAYER_ATTACK
+    CMP     #1,D1                   CHECK IF INPUT IS EQUAL TO 1
+    BEQ     PLAYER_ATTACK           IF EQUAL , PLAYER WILL ATTACK
     
-    CMP     #2,D1
-    BEQ     PLAYER_SHIELD
+    CMP     #2,D1                   CHECK IF INPUT IS EQUAL TO 1
+    BEQ     PLAYER_SHIELD           IF EQUAL , PLAYER WILL USE THEIR SHIELD
     
-    CMP     #3,D1
-    BEQ     PLAYER_USE_POTION
+    CMP     #3,D1                   CHECK IF INPUT IS EQUAL TO 1
+    BEQ     PLAYER_USE_POTION       IF EQUAL , PLAYER WILL HEAL
     
     RTS
 
@@ -226,64 +208,64 @@ GAMEPLAY:
 PLAYER_ATTACK:
     BSR     DECORATE
     
-    BSR     COLLISION
+    BSR     COLLISION               CHECKS FOR COLLISION (DOESNT WORK AS IT WILL ALWAYS STRIKE)
     
     BSR     ENDL
     
-    BSR     RABBIT_ATTACKS
+    BSR     RABBIT_ATTACKS          RABBIT ATTACKS BACK
     
     BSR     DECORATE
     
-    BSR     GAMEPLAY
+    BSR     GAMEPLAY                GO BACK TO THE GAMEPLAY LOOP
     
     RTS
     
 PLAYER_SHIELD:
     BSR     DECORATE
     
-    BSR     TEXT_COLOUR_GREEN
+    BSR     TEXT_COLOUR_GREEN       CHANGE TEXT COLOUR TO GREEN
     
-    LEA     SHIELD_MSG,A1
+    LEA     SHIELD_MSG,A1           TELL USER THEY USED THE SHIELD ABILITY
     MOVE.B  #14,D0
     TRAP    #15
     
-    BSR     TEXT_COLOUR_WHITE
+    BSR     TEXT_COLOUR_WHITE       CHANGE TEXT COLOUR BACK TO WHITE
     
     BSR     ENDL
     
-    BSR     RABBIT_FAILS_ATTACK
+    BSR     RABBIT_FAILS_ATTACK     TELL USER THE RABBIT FAILED TO ATTACK SINCE THEY HAD THEIR SHIELD ACTIVE THIS TURN
     
-    BSR     DECORATE
+    BSR     DECORATE                
     
     BSR     GAMEPLAY
 
 PLAYER_USE_POTION:
-    MOVE.B  $4500,D1
-    CMP     #0,D1
-    BEQ     NO_POTIONS_LEFT
+    MOVE.B  $4500,D1            STORE POTION AMOUNT VALUE IN DATA REGISTER 1
+    CMP     #0,D1               COMPARE 0 TO AMOUNT OF POTIONS LEFT
+    BEQ     NO_POTIONS_LEFT     IF 0 POTIONS LEFT , TELL USER THEY HAVE NO POTIONS LEFT
     
-    MOVE.B  $4003,D1
-    CMP     #100,D1
-    BGT     AT_MAX_HEALTH
+    MOVE.B  $4003,D1            STORE HEALTH VALUE IN DATA REGISTER 1
+    CMP     #99,D1              COMPARE 99 TO HEALTH VALUE 
+    BGT     AT_MAX_HEALTH       IF HEALTH VALUE IS GREATER THEN 99 , TELL USER THEY ARE AT MAX HEALTH AND CANT USE POTION
     
     BSR     DECORATE
     
     BSR     TEXT_COLOUR_GREEN
 
-    LEA     USE_POTION_MSG,A1
-    MOVE.B  #14,D0
+    LEA     USE_POTION_MSG,A1   TELL USER THEY USED A POTION
+    MOVE.B  #14,D0              
     TRAP    #15
     
     BSR     TEXT_COLOUR_WHITE
     
     SUB.B   #1,$4500            SUBTRACT 1 POTION FROM INVENTORY
     
-    ADD     #$1E,D4             SUBTRACT 10 (A IN HEX) FROM 100 (64 IN HEX) IN  DATA REGISTER 1
+    ADD     #$1E,D4             ADD 30(1E IN HEX) TO HEALTH VALUE STORED IN D4
     MOVE.B  D4,$4003            PLACE NEW HEALTH IN MEMORY ADRESS 4003
     
     BSR     ENDL
     
-    BSR     RABBIT_ATTACKS
+    BSR     RABBIT_ATTACKS      PROCESS THE RABBITS ATTACK
     
     BSR     DECORATE
     
@@ -293,34 +275,34 @@ PLAYER_USE_POTION:
 * RETRIEVES THE SCORE AND HEALTH FROM MEMORY LOCATION --
 *-------------------------------------------------------   
 HUD:
-    LEA     HUD_MSG_SCORE,A1
-    MOVE.B  #14,D0
+    LEA     HUD_MSG_SCORE,A1    STORE SCORE STRING IN A1
+    MOVE.B  #14,D0              DISPLAY STRING
     TRAP    #15
     
     CLR     D1
-    MOVE.L  (A6),D1     RETRIEVE THE VALUE A6 POINT TO AND MOVE TO D1
-    MOVE.B  #3,D0       MOVE LITERAL 3 TO D0
-    TRAP    #15         INTREPRET VALUE IN D0, WHICH IS 3 SO DISPLAYS D1
+    MOVE.B  (A6),D1             GET HEALTH VALUE FROM MEMORY ADRESS STORED IN A6 AND STORE IN D1
+    MOVE.B  #3,D0               MOVE LITERAL 3 TO D0
+    TRAP    #15                 INTREPRET VALUE IN D0, WHICH IS 3 SO DISPLAYS D1
     
     BSR     ENDL
     
-    LEA     HUD_MSG_HEALTH,A1
-    MOVE.B  #14,D0
+    LEA     HUD_MSG_HEALTH,A1   STORE HEALTH STRING IN A1
+    MOVE.B  #14,D0              DISPLAY STRING
     TRAP    #15
     
-    MOVE.L  (A3),D1     RETRIEVE THE VALUE A3 POINT TO AND MOVE TO D1
-    MOVE.B  #3,D0       MOVE LITERAL 3 TO D0
-    TRAP    #15         INTREPRET VALUE IN D0, WHICH IS 3 SO DISPLAYS D1
+    MOVE.L  (A3),D1             RETRIEVE THE VALUE A3 POINT TO AND MOVE TO D1
+    MOVE.B  #3,D0               MOVE LITERAL 3 TO D0
+    TRAP    #15                 INTREPRET VALUE IN D0, WHICH IS 3 SO DISPLAYS D1
     
     BSR     ENDL
     
-    LEA     POTIONS_AMOUNT_MSG,A1
-    MOVE.B  #14,D0
+    LEA     POTIONS_AMOUNT_MSG,A1 STORE POTIONS AMOUNT STRING IN A1
+    MOVE.B  #14,D0              DISPLAY STRING 
     TRAP    #15
     
-    MOVE.B  $4500,D1
-    MOVE.B  #3,D0
-    TRAP    #15
+    MOVE.B  $4500,D1            STORE POTION AMOUNT VALUE IN D1
+    MOVE.B  #3,D0               MOVE LITERAL 3 TO D0
+    TRAP    #15                 INTREPRET VALUE IN D0, WHICH IS 3 SO DISPLAYS D1
     
     BSR     DECORATE
     RTS
@@ -333,13 +315,13 @@ HUD:
 ENTER_VALID_INPUT:
     BSR     DECORATE
     
-    BSR     TEXT_COLOUR_RED
+    BSR     TEXT_COLOUR_RED     CHANGE TEXT COLOUR TO RED
     
-    LEA     INVALID_INPUT,A1
-    MOVE.B  #14,D0
+    LEA     INVALID_INPUT,A1    STORE STRING ADDRESS IN A1
+    MOVE.B  #14,D0              DISPLAY STRING ASKING FOR VALID USER INPUT
     TRAP    #15
     
-    BSR     TEXT_COLOUR_WHITE
+    BSR     TEXT_COLOUR_WHITE   CHANGE TEXT COLOUR BACK TO WHITE
     
     BSR     DECORATE
 
@@ -360,9 +342,9 @@ COLLISION_HIT:
     MOVE    #14,D0            TRAP TASK 14
     TRAP    #15
     
-    MOVE.B  (A4),D7
-    SUB.B   #$A,D7
-    MOVE.B  D7,(A4)
+    MOVE.B  (A4),D7           GET RABBIT'S HEALTH VALUE FROM ADRESS REGISTER 4 AND STORE IN D7
+    SUB.B   #$A,D7            SUBTRACT 10 HEALTH (A IN HEX) FROM RABBIT'S HEALTH VALUE IN D7
+    MOVE.B  D7,(A4)           SET NEW HEALTH VALUE IN MEMORY ADRESS STORED IN A7
     
     BSR     TEXT_COLOUR_WHITE
     
@@ -370,8 +352,8 @@ COLLISION_HIT:
     
 COLLISION_MISS:
     *MISS
-    LEA     MISS_MSG,A1
-    MOVE    #14,D0
+    LEA     MISS_MSG,A1       STORE STRING ADRESS IN A1
+    MOVE    #14,D0            TRAP TASK 14
     TRAP    #15
     RTS
 
@@ -395,8 +377,8 @@ RABBIT_ATTACKS:
 RABBIT_FAILS_ATTACK:
     BSR     TEXT_COLOUR_GREY
     
-    LEA     RABBITFAILATTACK_MSG,A1         LOAD MESSAGE
-    MOVE.B  #14,D0                          TRAP TASK 14
+    LEA     RABBITFAILATTACK_MSG,A1         STORE STRING ADRESS IN A1
+    MOVE.B  #14,D0                          DISPLAY STRING WITH TRAP TASK 14
     TRAP    #15                             EXECUTE
     
     BSR     TEXT_COLOUR_WHITE
@@ -408,7 +390,7 @@ RABBIT_HEALTH:
     MOVE.B  #14,D0                          TRAP TASK 14
     TRAP    #15                             EXECUTE
     
-    MOVE.B  D7,D1       RETRIEVE THE VALUE A3 POINT TO AND MOVE TO D1
+    MOVE.B  D7,D1       MOVE RABBIT'S HEALTH VALUE TO D1
     MOVE.B  #3,D0       MOVE LITERAL 3 TO D0
     TRAP    #15         INTREPRET VALUE IN D0, WHICH IS 3 SO DISPLAYS D1
 *-------------------------------------------------------
@@ -462,15 +444,15 @@ TEXT_COLOUR_WHITE:
     TRAP    #15                             EXECUTE
     RTS
 TEXT_COLOUR_GREY:
-    MOVE.l  #$666666,D1                     SET COLOUR BACK TO WHITE
+    MOVE.l  #$666666,D1                     SET COLOUR BACK TO GREY
     MOVE    #21,D0                          TRAP TASK 21
     TRAP    #15                             EXECUTE
     RTS
 *-------------------------------------------------------
 *------------------------REPLAY-------------------------
-*-------------------------------------------------------
-REPLAY:
-    BSR     ENDL
+*----------------REPLAY DOESNT WORK---------------------
+REPLAY:                
+    BSR     ENDL        
     LEA     REPLAY_MSG,A1
     MOVE.B  #14,D0
     TRAP    #15
@@ -493,26 +475,26 @@ ENDL:
 *------------------------PROCESS HEALTH-----------------
 *CHECK IF ANY OF THE ENTITIES ARE DEFEATED--------------
 CHECK_IF_DEFEATED:
-        MOVE.B  (A4),D5
-        CMP     #0,D5
-        BEQ     RABBIT_DEFEATED
+        MOVE.B  (A4),D5                 MOVE RABBIT'S HEALTH VALUE TO D5
+        CMP     #0,D5                   COMPARE 0 TO RABBIT'S HEALTH
+        BEQ     RABBIT_DEFEATED         IF EQUAL THEN RABBIT HAS BEEN DEFEATED
     
-        MOVE.B  $4003,D5
-        CMP     #0,D5
-        BEQ     PLAYER_DEFEATED
+        MOVE.B  $4003,D5                MOVE PLAYER'S HEALTH VALUE FROM MEMORY ADRESS TO D5
+        CMP     #0,D5                   COMPARE 0 TO PLAYER'S HEALTH VALUE
+        BEQ     PLAYER_DEFEATED         IF EQUAL , PLAYER HAS BEEN DEFEATED
         
         RTS
 RABBIT_DEFEATED:
-        *BSR     CLEAR_SCREEN
-        LEA     RABBIT_DEFEATED_MSG,A1
-        MOVE.B  #14,D0
+
+        LEA     RABBIT_DEFEATED_MSG,A1  LOAD STRING ADDRESS IN A1
+        MOVE.B  #14,D0                  DISPLAY STRING
         TRAP    #15
         
-        BSR     REPLAY
+        BSR     REPLAY                  
 PLAYER_DEFEATED:
-        *BSR     CLEAR_SCREEN
-        LEA     PLAYER_DEFEATED_MSG,A1
-        MOVE.B  #14,D0
+
+        LEA     PLAYER_DEFEATED_MSG,A1  LOAD STRING ADDRESS IN A1
+        MOVE.B  #14,D0                  DISPLAY STRING
         TRAP    #15
         
         BSR     REPLAY
@@ -572,7 +554,7 @@ RABBITHEALTH:            DS.W    1   RABBITS HEALTH
 
 SCORE:                   DS.W    1   RESERVE SPACE FOR SCORE
 
-XP:                      DS.W    1   RESERVE SPACE FOR COINS
+XP:                      DS.W    1   RESERVE SPACE FOR EXPERIENCE POINTS
 
     END START
 
