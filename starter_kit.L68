@@ -1,6 +1,6 @@
 00001000 Starting Address
 Assembler used: EASy68K Editor/Assembler v5.16.01
-Created On: 24/03/2021 23:13:37
+Created On: 25/03/2021 09:40:14
 
 00000000                             1  *-------------------------------------------------------
 00000000                             2  * STARTING MEMORY ADDRESS FOR THE PROGRAMME $1000
@@ -124,10 +124,10 @@ Created On: 24/03/2021 23:13:37
 000030A6  103C 0004                120      MOVE.B  #4,D0               ASK FOR NUMBER INPUT TRAP FUNC
 000030AA  4E4F                     121      TRAP    #15                 
 000030AC                           122      
-000030AC  B27C 0001                123      CMP     #1,D1               COMPARE 1 TO USER INPUT
+000030AC  B27C 0001                123      CMP     #MIN_POTIONS,D1     COMPARE 1 TO USER INPUT
 000030B0  6DE0                     124      BLT     POTIONS             IF LESS THAN , GO BACK TO THE START OF THE BRANCH
 000030B2                           125      
-000030B2  B27C 0009                126      CMP     #9,D1               COMPARE 9 TO USER INPUT
+000030B2  B27C 0009                126      CMP     #MAX_POTIONS,D1     COMPARE 9 TO USER INPUT
 000030B6  6EDA                     127      BGT     POTIONS             IF GREATER THAN , GO BACK TO THE START OF THE BRANCH
 000030B8                           128      
 000030B8  11C1 4500                129      MOVE.B  D1,$4500            MOVE AMOUNT OF POTIONS TO MEMORY LOCATION 4500
@@ -280,33 +280,33 @@ Created On: 24/03/2021 23:13:37
 000031EC                           276  *-------------------------------------------------------   
 000031EC                           277  HUD:
 000031EC  43F9 00003639            278      LEA     HUD_MSG_SCORE,A1    STORE SCORE STRING IN A1
-000031F2  103C 000E                279      MOVE.B  #14,D0              DISPLAY STRING IN A1 TRAP FUNC
+000031F2  103C 000E                279      MOVE.B  #14,D0              DISPLAY STRING
 000031F6  4E4F                     280      TRAP    #15
 000031F8                           281      
 000031F8  4241                     282      CLR     D1
-000031FA  1216                     283      MOVE.B  (A6),D1             
+000031FA  1216                     283      MOVE.B  (A6),D1             GET HEALTH VALUE FROM MEMORY ADRESS STORED IN A6 AND STORE IN D1
 000031FC  103C 0003                284      MOVE.B  #3,D0               MOVE LITERAL 3 TO D0
 00003200  4E4F                     285      TRAP    #15                 INTREPRET VALUE IN D0, WHICH IS 3 SO DISPLAYS D1
 00003202                           286      
 00003202  6100 016E                287      BSR     ENDL
 00003206                           288      
-00003206  43F9 00003629            289      LEA     HUD_MSG_HEALTH,A1
-0000320C  103C 000E                290      MOVE.B  #14,D0
+00003206  43F9 00003629            289      LEA     HUD_MSG_HEALTH,A1   STORE HEALTH STRING IN A1
+0000320C  103C 000E                290      MOVE.B  #14,D0              DISPLAY STRING
 00003210  4E4F                     291      TRAP    #15
 00003212                           292      
-00003212  2213                     293      MOVE.L  (A3),D1     RETRIEVE THE VALUE A3 POINT TO AND MOVE TO D1
-00003214  103C 0003                294      MOVE.B  #3,D0       MOVE LITERAL 3 TO D0
-00003218  4E4F                     295      TRAP    #15         INTREPRET VALUE IN D0, WHICH IS 3 SO DISPLAYS D1
+00003212  2213                     293      MOVE.L  (A3),D1             RETRIEVE THE VALUE A3 POINT TO AND MOVE TO D1
+00003214  103C 0003                294      MOVE.B  #3,D0               MOVE LITERAL 3 TO D0
+00003218  4E4F                     295      TRAP    #15                 INTREPRET VALUE IN D0, WHICH IS 3 SO DISPLAYS D1
 0000321A                           296      
 0000321A  6100 0156                297      BSR     ENDL
 0000321E                           298      
-0000321E  43F9 000036B1            299      LEA     POTIONS_AMOUNT_MSG,A1
-00003224  103C 000E                300      MOVE.B  #14,D0
+0000321E  43F9 000036B1            299      LEA     POTIONS_AMOUNT_MSG,A1 STORE POTIONS AMOUNT STRING IN A1
+00003224  103C 000E                300      MOVE.B  #14,D0              DISPLAY STRING 
 00003228  4E4F                     301      TRAP    #15
 0000322A                           302      
-0000322A  1238 4500                303      MOVE.B  $4500,D1
-0000322E  103C 0003                304      MOVE.B  #3,D0
-00003232  4E4F                     305      TRAP    #15
+0000322A  1238 4500                303      MOVE.B  $4500,D1            STORE POTION AMOUNT VALUE IN D1
+0000322E  103C 0003                304      MOVE.B  #3,D0               MOVE LITERAL 3 TO D0
+00003232  4E4F                     305      TRAP    #15                 INTREPRET VALUE IN D0, WHICH IS 3 SO DISPLAYS D1
 00003234                           306      
 00003234  6100 00B8                307      BSR     DECORATE
 00003238  4E75                     308      RTS
@@ -319,13 +319,13 @@ Created On: 24/03/2021 23:13:37
 0000323A                           315  ENTER_VALID_INPUT:
 0000323A  6100 00B2                316      BSR     DECORATE
 0000323E                           317      
-0000323E  6100 00D8                318      BSR     TEXT_COLOUR_RED
+0000323E  6100 00D8                318      BSR     TEXT_COLOUR_RED     CHANGE TEXT COLOUR TO RED
 00003242                           319      
-00003242  43F9 0000369C            320      LEA     INVALID_INPUT,A1
-00003248  103C 000E                321      MOVE.B  #14,D0
+00003242  43F9 0000369C            320      LEA     INVALID_INPUT,A1    STORE STRING ADDRESS IN A1
+00003248  103C 000E                321      MOVE.B  #14,D0              DISPLAY STRING ASKING FOR VALID USER INPUT
 0000324C  4E4F                     322      TRAP    #15
 0000324E                           323      
-0000324E  6100 00E4                324      BSR     TEXT_COLOUR_WHITE
+0000324E  6100 00E4                324      BSR     TEXT_COLOUR_WHITE   CHANGE TEXT COLOUR BACK TO WHITE
 00003252                           325      
 00003252  6100 009A                326      BSR     DECORATE
 00003256                           327  
@@ -346,9 +346,9 @@ Created On: 24/03/2021 23:13:37
 00003270  303C 000E                342      MOVE    #14,D0            TRAP TASK 14
 00003274  4E4F                     343      TRAP    #15
 00003276                           344      
-00003276  1E14                     345      MOVE.B  (A4),D7
-00003278  0407 000A                346      SUB.B   #$A,D7
-0000327C  1887                     347      MOVE.B  D7,(A4)
+00003276  1E14                     345      MOVE.B  (A4),D7           GET RABBIT'S HEALTH VALUE FROM ADRESS REGISTER 4 AND STORE IN D7
+00003278  0407 000A                346      SUB.B   #$A,D7            SUBTRACT 10 HEALTH (A IN HEX) FROM RABBIT'S HEALTH VALUE IN D7
+0000327C  1887                     347      MOVE.B  D7,(A4)           SET NEW HEALTH VALUE IN MEMORY ADRESS STORED IN A7
 0000327E                           348      
 0000327E  6100 00B4                349      BSR     TEXT_COLOUR_WHITE
 00003282                           350      
@@ -356,8 +356,8 @@ Created On: 24/03/2021 23:13:37
 00003284                           352      
 00003284                           353  COLLISION_MISS:
 00003284                           354      *MISS
-00003284  43F9 000035C1            355      LEA     MISS_MSG,A1
-0000328A  303C 000E                356      MOVE    #14,D0
+00003284  43F9 000035C1            355      LEA     MISS_MSG,A1       STORE STRING ADRESS IN A1
+0000328A  303C 000E                356      MOVE    #14,D0            TRAP TASK 14
 0000328E  4E4F                     357      TRAP    #15
 00003290  4E75                     358      RTS
 00003292                           359  
@@ -381,8 +381,8 @@ Created On: 24/03/2021 23:13:37
 000032B0                           377  RABBIT_FAILS_ATTACK:
 000032B0  6100 0090                378      BSR     TEXT_COLOUR_GREY
 000032B4                           379      
-000032B4  43F9 000034F8            380      LEA     RABBITFAILATTACK_MSG,A1         LOAD MESSAGE
-000032BA  103C 000E                381      MOVE.B  #14,D0                          TRAP TASK 14
+000032B4  43F9 000034F8            380      LEA     RABBITFAILATTACK_MSG,A1         STORE STRING ADRESS IN A1
+000032BA  103C 000E                381      MOVE.B  #14,D0                          DISPLAY STRING WITH TRAP TASK 14
 000032BE  4E4F                     382      TRAP    #15                             EXECUTE
 000032C0                           383      
 000032C0  6100 0072                384      BSR     TEXT_COLOUR_WHITE
@@ -394,7 +394,7 @@ Created On: 24/03/2021 23:13:37
 000032CC  103C 000E                390      MOVE.B  #14,D0                          TRAP TASK 14
 000032D0  4E4F                     391      TRAP    #15                             EXECUTE
 000032D2                           392      
-000032D2  1207                     393      MOVE.B  D7,D1       RETRIEVE THE VALUE A3 POINT TO AND MOVE TO D1
+000032D2  1207                     393      MOVE.B  D7,D1       MOVE RABBIT'S HEALTH VALUE TO D1
 000032D4  103C 0003                394      MOVE.B  #3,D0       MOVE LITERAL 3 TO D0
 000032D8  4E4F                     395      TRAP    #15         INTREPRET VALUE IN D0, WHICH IS 3 SO DISPLAYS D1
 000032DA                           396  *-------------------------------------------------------
@@ -448,15 +448,15 @@ Created On: 24/03/2021 23:13:37
 0000333E  4E4F                     444      TRAP    #15                             EXECUTE
 00003340  4E75                     445      RTS
 00003342                           446  TEXT_COLOUR_GREY:
-00003342  223C 00666666            447      MOVE.l  #$666666,D1                     SET COLOUR BACK TO WHITE
+00003342  223C 00666666            447      MOVE.l  #$666666,D1                     SET COLOUR BACK TO GREY
 00003348  303C 0015                448      MOVE    #21,D0                          TRAP TASK 21
 0000334C  4E4F                     449      TRAP    #15                             EXECUTE
 0000334E  4E75                     450      RTS
 00003350                           451  *-------------------------------------------------------
 00003350                           452  *------------------------REPLAY-------------------------
-00003350                           453  *-------------------------------------------------------
-00003350                           454  REPLAY:
-00003350  6100 0020                455      BSR     ENDL
+00003350                           453  *----------------REPLAY DOESNT WORK---------------------
+00003350                           454  REPLAY:                
+00003350  6100 0020                455      BSR     ENDL        
 00003354  43F9 000035FB            456      LEA     REPLAY_MSG,A1
 0000335A  103C 000E                457      MOVE.B  #14,D0
 0000335E  4E4F                     458      TRAP    #15
@@ -466,7 +466,7 @@ Created On: 24/03/2021 23:13:37
 00003366                           462  
 00003366  B27C 0000                463      CMP     #EXIT,D1
 0000336A  6700 FC9A                464      BEQ     END         IF SR Z REGISTER CONTAINS 1 BEQ => BRANCH EQUALS
-0000336E  6100 FC9A                465      BSR     WELCOME
+0000336E  6100 DC90                465      BSR     START
 00003372                           466  
 00003372                           467  ENDL:
 00003372  48E7 8040                468      MOVEM.L D0/A1,-(A7)
@@ -479,26 +479,26 @@ Created On: 24/03/2021 23:13:37
 00003388                           475  *------------------------PROCESS HEALTH-----------------
 00003388                           476  *CHECK IF ANY OF THE ENTITIES ARE DEFEATED--------------
 00003388                           477  CHECK_IF_DEFEATED:
-00003388  1A14                     478          MOVE.B  (A4),D5
-0000338A  BA7C 0000                479          CMP     #0,D5
-0000338E  6700 0010                480          BEQ     RABBIT_DEFEATED
+00003388  1A14                     478          MOVE.B  (A4),D5                 MOVE RABBIT'S HEALTH VALUE TO D5
+0000338A  BA7C 0000                479          CMP     #0,D5                   COMPARE 0 TO RABBIT'S HEALTH
+0000338E  6700 0010                480          BEQ     RABBIT_DEFEATED         IF EQUAL THEN RABBIT HAS BEEN DEFEATED
 00003392                           481      
-00003392  1A38 4003                482          MOVE.B  $4003,D5
-00003396  BA7C 0000                483          CMP     #0,D5
-0000339A  6700 0012                484          BEQ     PLAYER_DEFEATED
+00003392  1A38 4003                482          MOVE.B  $4003,D5                MOVE PLAYER'S HEALTH VALUE FROM MEMORY ADRESS TO D5
+00003396  BA7C 0000                483          CMP     #0,D5                   COMPARE 0 TO PLAYER'S HEALTH VALUE
+0000339A  6700 0012                484          BEQ     PLAYER_DEFEATED         IF EQUAL , PLAYER HAS BEEN DEFEATED
 0000339E                           485          
 0000339E  4E75                     486          RTS
 000033A0                           487  RABBIT_DEFEATED:
-000033A0                           488          *BSR     CLEAR_SCREEN
-000033A0  43F9 000036FD            489          LEA     RABBIT_DEFEATED_MSG,A1
-000033A6  103C 000E                490          MOVE.B  #14,D0
+000033A0                           488  
+000033A0  43F9 000036FD            489          LEA     RABBIT_DEFEATED_MSG,A1  LOAD STRING ADDRESS IN A1
+000033A6  103C 000E                490          MOVE.B  #14,D0                  DISPLAY STRING
 000033AA  4E4F                     491          TRAP    #15
 000033AC                           492          
-000033AC  61A2                     493          BSR     REPLAY
+000033AC  61A2                     493          BSR     REPLAY                  
 000033AE                           494  PLAYER_DEFEATED:
-000033AE                           495          *BSR     CLEAR_SCREEN
-000033AE  43F9 000036E6            496          LEA     PLAYER_DEFEATED_MSG,A1
-000033B4  103C 000E                497          MOVE.B  #14,D0
+000033AE                           495  
+000033AE  43F9 000036E6            496          LEA     PLAYER_DEFEATED_MSG,A1  LOAD STRING ADDRESS IN A1
+000033B4  103C 000E                497          MOVE.B  #14,D0                  DISPLAY STRING
 000033B8  4E4F                     498          TRAP    #15
 000033BA                           499          
 000033BA  6194                     500          BSR     REPLAY
@@ -558,7 +558,7 @@ Created On: 24/03/2021 23:13:37
 00003726                           554  
 00003726                           555  SCORE:                   DS.W    1   RESERVE SPACE FOR SCORE
 00003728                           556  
-00003728                           557  XP:                      DS.W    1   RESERVE SPACE FOR COINS
+00003728                           557  XP:                      DS.W    1   RESERVE SPACE FOR EXPERIENCE POINTS
 0000372A                           558  
 0000372A                           559      END START
 
